@@ -1,0 +1,15 @@
+INFO:     127.0.0.1:61983 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61987 - "POST /auth/token HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61987 - "POST /auth/token HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61987 - "POST /auth/token HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61987 - "POST /auth/token HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61987 - "POST /auth/token HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61987 - "POST /auth/token HTTP/1.1" 429 Too Many Requests
+INFO:     127.0.0.1:61992 - "POST /auth/token HTTP/1.1" 429 Too Many Requests
+INFO:     127.0.0.1:61992 - "POST /auth/token HTTP/1.1" 429 Too Many Requests
+INFO:     127.0.0.1:61992 - "POST /auth/token HTTP/1.1" 429 Too Many Requests
+INFO:     127.0.0.1:61992 - "POST /auth/token HTTP/1.1" 429 Too Many Requests
+INFO:     127.0.0.1:61992 - "POST /auth/token HTTP/1.1" 429 Too Many Requests
+INFO:     127.0.0.1:61992 - "POST /auth/token HTTP/1.1" 429 Too Many Requests
+INFO:     127.0.0.1:50938 - "POST /auth/token HTTP/1.1" 429 Too Many Requests
+INFO:     127.0.0.1:50938 - "GET /health HTTP/1.1" 200 OK
