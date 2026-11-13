@@ -37,11 +37,17 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         request_id = request.headers.get(REQUEST_ID_HEADER) or str(uuid.uuid4())
 
-        token = request_id_var.set(request_id)
-        try:
-            response = await call_next(request)
-        finally:
-            request_id_var.reset(token)
+        # Deliberately not reset in a finally: Starlette handles a fully
+        # unhandled exception (one with no registered AppException/
+        # HTTPException/RequestValidationError handler) via
+        # ServerErrorMiddleware, which wraps *outside* this middleware -
+        # resetting here would clear the ID before that handler ever runs,
+        # so it couldn't include one in the error body or response header.
+        # Safe to leave set: every request re-sets it at the top of this
+        # method regardless, so nothing downstream ever reads a stale value.
+        request_id_var.set(request_id)
+
+        response = await call_next(request)
 
         response.headers[REQUEST_ID_HEADER] = request_id
         return response

@@ -9,15 +9,17 @@ from pydantic import (
     field_validator,
 )
 
+from app.constants import PROMPT_NAME_MAX_LENGTH, PROMPT_TEXT_MAX_LENGTH
+
 
 class PromptFields(BaseModel):
     prompt_name: StrictStr = Field(
         min_length=2,
-        max_length=200
+        max_length=PROMPT_NAME_MAX_LENGTH
     )
     prompt_text: StrictStr = Field(
         min_length=1,
-        max_length=5000
+        max_length=PROMPT_TEXT_MAX_LENGTH
     )
 
     model_config = ConfigDict(

@@ -1,33 +1,41 @@
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions.response_exceptions import PromptNotFoundError
 from app.models.prompt import Prompt
 
 
-def create_prompt(db: Session, prompt_name: str, prompt_text: str) -> Prompt:
+async def create_prompt(
+    db: AsyncSession, prompt_name: str, prompt_text: str
+) -> Prompt:
     new_prompt = Prompt(
         prompt_name=prompt_name,
         prompt_text=prompt_text,
     )
 
     db.add(new_prompt)
-    db.commit()
-    db.refresh(new_prompt)
+    await db.commit()
+    await db.refresh(new_prompt)
 
     return new_prompt
 
 
-def list_prompts(db: Session, limit: int, offset: int) -> list[Prompt]:
-    return (
-        db.query(Prompt)
-        .offset(offset)
-        .limit(limit)
-        .all()
+async def list_prompts(
+    db: AsyncSession, limit: int, offset: int
+) -> list[Prompt]:
+    result = await db.execute(
+        select(Prompt).offset(offset).limit(limit)
     )
 
+    return list(result.scalars().all())
 
-def get_prompt(db: Session, prompt_id: int) -> Prompt:
-    prompt = db.query(Prompt).filter(Prompt.id == prompt_id).first()
+
+async def get_prompt(db: AsyncSession, prompt_id: int) -> Prompt:
+    result = await db.execute(
+        select(Prompt).where(Prompt.id == prompt_id)
+    )
+
+    prompt = result.scalar_one_or_none()
 
     if prompt is None:
         raise PromptNotFoundError("Prompt not found.")
@@ -35,13 +43,17 @@ def get_prompt(db: Session, prompt_id: int) -> Prompt:
     return prompt
 
 
-def update_prompt(
-    db: Session,
+async def update_prompt(
+    db: AsyncSession,
     prompt_id: int,
     prompt_name: str,
     prompt_text: str,
 ) -> Prompt:
-    prompt = db.query(Prompt).filter(Prompt.id == prompt_id).first()
+    result = await db.execute(
+        select(Prompt).where(Prompt.id == prompt_id)
+    )
+
+    prompt = result.scalar_one_or_none()
 
     if prompt is None:
         raise PromptNotFoundError("Prompt not found.")
@@ -49,21 +61,21 @@ def update_prompt(
     prompt.prompt_name = prompt_name
     prompt.prompt_text = prompt_text
 
-    db.commit()
-    db.refresh(prompt)
+    await db.commit()
+    await db.refresh(prompt)
 
     return prompt
 
 
-def delete_prompt(db: Session, prompt_id: int) -> None:
-    prompt = (
-        db.query(Prompt)
-        .filter(Prompt.id == prompt_id)
-        .first()
+async def delete_prompt(db: AsyncSession, prompt_id: int) -> None:
+    result = await db.execute(
+        select(Prompt).where(Prompt.id == prompt_id)
     )
+
+    prompt = result.scalar_one_or_none()
 
     if prompt is None:
         raise PromptNotFoundError("Prompt not found.")
 
-    db.delete(prompt)
-    db.commit()
+    await db.delete(prompt)
+    await db.commit()

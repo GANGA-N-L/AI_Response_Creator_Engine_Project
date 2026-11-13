@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, Header, Request
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, Header, Request, Response
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.rate_limiter import get_auth_subject_or_ip, limiter
 from app.database.database import get_db
@@ -27,10 +27,11 @@ router = APIRouter(
     }
 )
 @limiter.limit("60/minute", key_func=get_auth_subject_or_ip)
-def generate_ai_response(
+async def generate_ai_response(
     request: Request,
     payload: ResponseRequest,
-    db: Session = Depends(get_db),
+    response: Response,
+    db: AsyncSession = Depends(get_db),
     idempotency_key: str | None = Header(
         default=None,
         alias="Idempotency-Key",
@@ -38,14 +39,15 @@ def generate_ai_response(
         description=(
             "Optional client-generated key. Retrying the same request "
             "with the same key returns the original response instead of "
-            "consuming credits or calling the AI provider again."
+            "calling the AI provider again."
         ),
     ),
 ):
-    return ai_response_service.generate_ai_response(
+    return await ai_response_service.generate_ai_response(
         db=db,
         customer_id=payload.customer_id,
         prompt_id=payload.prompt_id,
         text=payload.text,
         idempotency_key=idempotency_key,
+        response=response,
     )

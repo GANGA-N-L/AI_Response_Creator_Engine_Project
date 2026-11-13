@@ -41,8 +41,17 @@ _handler.addFilter(RequestIdFilter())
 
 logging.basicConfig(level=settings.log_level, handlers=[_handler])
 
+# Silences the HTTP stack's own verbose internals (full request/response
+# bodies, TLS handshake steps, connection pooling) so LOG_LEVEL=DEBUG
+# surfaces only this app's own debug output, not every library's -
+# found live that "httpx2" (below) isn't a real logger namespace either
+# httpx or httpcore ever uses, so it silenced nothing: httpcore's own
+# loggers ("httpcore.connection"/"httpcore.http11") still flooded
+# through at DEBUG once app/services/ai_response_service.py's
+# violation-diagnostic logging prompted enabling LOG_LEVEL=DEBUG.
 logging.getLogger("httpx").setLevel(logging.WARNING)
-logging.getLogger("httpx2").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.getLogger("openai").setLevel(logging.WARNING)
 
 
 logger = logging.getLogger("ai_response_creator")

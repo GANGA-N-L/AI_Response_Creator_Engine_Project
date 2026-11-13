@@ -1,8 +1,9 @@
 import hashlib
 import json
 
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.idempotency_key import IdempotencyKey
 
@@ -21,23 +22,23 @@ def compute_request_hash(customer_id: int, prompt_id: int, text: str) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-def get_cached_response(
-    db: Session,
+async def get_cached_response(
+    db: AsyncSession,
     customer_id: int,
     idempotency_key: str,
 ) -> IdempotencyKey | None:
-    return (
-        db.query(IdempotencyKey)
-        .filter(
+    result = await db.execute(
+        select(IdempotencyKey).where(
             IdempotencyKey.customer_id == customer_id,
             IdempotencyKey.idempotency_key == idempotency_key,
         )
-        .first()
     )
 
+    return result.scalar_one_or_none()
 
-def store_response(
-    db: Session,
+
+async def store_response(
+    db: AsyncSession,
     customer_id: int,
     idempotency_key: str,
     request_hash: str,
@@ -46,8 +47,8 @@ def store_response(
 ) -> IdempotencyKey:
     """
     Stores the response produced for an idempotency key, so a retried
-    request with the same key can be answered without repeating any
-    side effects (credit consumption, AI provider calls).
+    request with the same key can be answered without repeating the
+    AI provider call.
 
     If a concurrent request already stored a response for the same key
     first, the unique constraint on (customer_id, idempotency_key)
@@ -66,16 +67,16 @@ def store_response(
     db.add(record)
 
     try:
-        db.commit()
+        await db.commit()
     except IntegrityError:
-        db.rollback()
-        existing = get_cached_response(db, customer_id, idempotency_key)
+        await db.rollback()
+        existing = await get_cached_response(db, customer_id, idempotency_key)
 
         if existing is not None:
             return existing
 
         raise
 
-    db.refresh(record)
+    await db.refresh(record)
 
     return record

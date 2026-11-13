@@ -9,8 +9,9 @@ from alembic import context
 from app.database.database import Base
 from app.models.customer import Customer  # noqa: F401 - registers Customer with Base.metadata for autogenerate
 from app.models.prompt import Prompt  # noqa: F401 - registers Prompt with Base.metadata for autogenerate
-from app.models.credit_transaction import CreditTransaction  # noqa: F401 - registers CreditTransaction with Base.metadata for autogenerate
 from app.models.idempotency_key import IdempotencyKey  # noqa: F401 - registers IdempotencyKey with Base.metadata for autogenerate
+from app.models.ai_usage_log import AiUsageLog  # noqa: F401 - registers AiUsageLog with Base.metadata for autogenerate
+from app.models.response_history import ResponseHistory  # noqa: F401 - registers ResponseHistory with Base.metadata for autogenerate
 from app.core.config import settings
 
 # this is the Alembic Config object, which provides

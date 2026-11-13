@@ -25,13 +25,6 @@ class PromptNotFoundError(AppException):
     error_code = "PROMPT_NOT_FOUND"
 
 
-class InsufficientCreditsError(AppException):
-    """Raised when a customer does not have enough credits for a request."""
-
-    status_code = 400
-    error_code = "INSUFFICIENT_CREDITS"
-
-
 class RateLimitExceededError(AppException):
     """Raised when a customer exceeds their own request rate limit."""
 
@@ -44,10 +37,3 @@ class IdempotencyKeyConflictError(AppException):
 
     status_code = 409
     error_code = "IDEMPOTENCY_KEY_CONFLICT"
-
-
-class DatabaseError(AppException):
-    """Raised when a database operation required to serve the request fails."""
-
-    status_code = 500
-    error_code = "DATABASE_ERROR"

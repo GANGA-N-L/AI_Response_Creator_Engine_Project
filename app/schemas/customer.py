@@ -9,11 +9,13 @@ from pydantic import (
     field_validator,
 )
 
+from app.constants import CUSTOMER_NAME_MAX_LENGTH
+
 
 class CustomerCreate(BaseModel):
     customer_name: StrictStr = Field(
         min_length=2,
-        max_length=100,
+        max_length=CUSTOMER_NAME_MAX_LENGTH,
     )
 
     model_config = ConfigDict(
@@ -59,20 +61,8 @@ class CustomerCreate(BaseModel):
 class CustomerResponse(BaseModel):
     id: StrictInt
     customer_name: StrictStr
-    credits: StrictInt = Field(ge=0)
 
     model_config = ConfigDict(
         from_attributes=True,
-        extra="forbid",
-    )
-
-
-class CreditUpdate(BaseModel):
-    credits: StrictInt = Field(
-        ge=0,
-        le=1_000_000,
-    )
-
-    model_config = ConfigDict(
         extra="forbid",
     )

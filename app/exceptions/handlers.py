@@ -8,7 +8,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.exceptions.base import AppException
 from app.logging.logger import logger
-from app.schemas.response import ErrorResponse
+from app.logging.request_context import REQUEST_ID_HEADER, request_id_var
+from app.schemas.response import ErrorField, ErrorResponse
 
 
 def register_exception_handlers(app: FastAPI) -> None:
@@ -31,7 +32,8 @@ def register_exception_handlers(app: FastAPI) -> None:
                 message=(
                     "Too many requests. Please slow down and try again "
                     "shortly."
-                )
+                ),
+                request_id=request_id_var.get(),
             ).model_dump(exclude_none=True)
         )
 
@@ -49,12 +51,23 @@ def register_exception_handlers(app: FastAPI) -> None:
             extra={"path": request.url.path, "errors": exc.errors()},
         )
 
+        fields = [
+            ErrorField(
+                field=".".join(str(part) for part in error["loc"][1:])
+                or str(error["loc"][-1]),
+                message=error["msg"],
+            )
+            for error in exc.errors()
+        ]
+
         return JSONResponse(
             status_code=422,
             content=ErrorResponse(
                 status_code=422,
                 error_code="VALIDATION_ERROR",
-                message="Invalid request data."
+                message="Invalid request data.",
+                fields=fields or None,
+                request_id=request_id_var.get(),
             ).model_dump(exclude_none=True)
         )
 
@@ -82,7 +95,8 @@ def register_exception_handlers(app: FastAPI) -> None:
             content=ErrorResponse(
                 status_code=exc.status_code,
                 error_code=error_code,
-                message=str(exc.detail)
+                message=str(exc.detail),
+                request_id=request_id_var.get(),
             ).model_dump(exclude_none=True)
         )
 
@@ -104,7 +118,8 @@ def register_exception_handlers(app: FastAPI) -> None:
             content=ErrorResponse(
                 status_code=exc.status_code,
                 error_code=exc.error_code,
-                message=exc.message
+                message=exc.message,
+                request_id=request_id_var.get(),
             ).model_dump(exclude_none=True)
         )
 
@@ -118,7 +133,9 @@ def register_exception_handlers(app: FastAPI) -> None:
             extra={"path": request.url.path},
         )
 
-        return JSONResponse(
+        request_id = request_id_var.get()
+
+        response = JSONResponse(
             status_code=500,
             content=ErrorResponse(
                 status_code=500,
@@ -126,6 +143,18 @@ def register_exception_handlers(app: FastAPI) -> None:
                 message=(
                     "An unexpected error occurred. "
                     "Please try again later."
-                )
+                ),
+                request_id=request_id,
             ).model_dump(exclude_none=True)
         )
+
+        # This handler is Starlette's true fallback for anything with no
+        # registered AppException/HTTPException/RequestValidationError
+        # handler - it runs inside ServerErrorMiddleware, which wraps
+        # *outside* RequestIdMiddleware, so that middleware's own
+        # response.headers[...] = request_id line never executes on this
+        # path. Set it directly here instead.
+        if request_id:
+            response.headers[REQUEST_ID_HEADER] = request_id
+
+        return response
